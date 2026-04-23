@@ -1,0 +1,24 @@
+{
+  "name": "Sistem Pencatatan Kesanggupan Iuran Desa",
+  "short_name": "Iuran Desa",
+  "description": "Aplikasi pencatatan kesanggupan iuran jamaah per kelompok",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f4f0",
+  "theme_color": "#1a5c38",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
