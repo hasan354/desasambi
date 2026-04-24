@@ -1804,6 +1804,43 @@
 
   <!-- MODAL: KONFIRMASI CUSTOM -->
   <div class="modal-overlay" id="modalKonfirmasi">
+
+  <!-- MODAL: RIWAYAT CICILAN -->
+  <div class="modal-overlay" id="modalRiwayatCicilan">
+    <div class="modal" style="max-width:480px;">
+      <h3 id="riwayatCicilanJudul">📋 Riwayat Cicilan</h3>
+      <div id="riwayatCicilanList"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modalRiwayatCicilan')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDIT CICILAN -->
+  <div class="modal-overlay" id="modalEditCicilan">
+    <div class="modal" style="max-width:400px;">
+      <h3>✏️ Edit Cicilan</h3>
+      <div id="mEditCicilanAlert" class="alert"></div>
+      <div class="form-group">
+        <label>Nominal Cicilan (Rp)</label>
+        <div class="currency-input">
+          <span>Rp</span>
+          <input type="number" id="mEditCicilanNominal" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Metode</label>
+        <select id="mEditCicilanMetode">
+          <option value="tunai">💵 Tunai</option>
+          <option value="transfer">🏦 Transfer</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modalEditCicilan')">Batal</button>
+        <button class="btn btn-hijau btn-sm" onclick="simpanEditCicilan()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
     <div class="modal" style="max-width:400px;text-align:center;padding:36px 28px;">
       <div id="konfirmasiIcon" style="font-size:56px;margin-bottom:16px;">❓</div>
       <h3 id="konfirmasiJudul" style="margin-bottom:8px;font-size:18px;"></h3>
@@ -2619,12 +2656,93 @@
       <td data-label="Sisa">
         <strong style="color:${sisa > 0 ? 'var(--merah)' : 'var(--hijau)'}">${sisa === 0 ? '✅ Lunas' : rp(sisa)}</strong>
       </td>
-      <td data-label="Aksi">
-        ${sisa > 0 ? `<button class="btn btn-hijau btn-sm" onclick="openModalBayar('${pl.jamaah_id}', '${pl.program_id}')">+ Bayar</button>` : '-'}
+      <td data-label="Aksi" style="gap:6px;flex-wrap:wrap;">
+        ${sisa > 0 ? `<button class="btn btn-hijau btn-sm" onclick="openModalBayar('${pl.jamaah_id}', '${pl.program_id}')">+ Bayar</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="openRiwayatCicilan('${pl.jamaah_id}','${pl.program_id}','${pl.nama_jamaah}')">📋 Riwayat</button>
       </td>
     </tr>`;
       });
       document.getElementById('tblPembayaran').innerHTML = rows || emptyRow(6, 'Belum ada jamaah yang sanggup iuran');
+    }
+
+    // ============================================================
+    // RIWAYAT & EDIT CICILAN
+    // ============================================================
+    let _editCicilanId = null;
+
+    async function openRiwayatCicilan(jid, pid, nama) {
+      document.getElementById('riwayatCicilanJudul').textContent = `📋 Riwayat Cicilan — ${nama}`;
+      const { data: payments } = await _supabase.from('pembayaran')
+        .select('*').eq('jamaah_id', jid).eq('program_id', pid).is('is_installment', true)
+        .order('created_at', { ascending: false });
+
+      if (!payments || payments.length === 0) {
+        document.getElementById('riwayatCicilanList').innerHTML =
+          `<div class="empty-state"><div class="icon">💳</div><p>Belum ada cicilan tercatat</p></div>`;
+      } else {
+        let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        payments.forEach((p, i) => {
+          html += `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--krem-gelap);background:var(--krem);">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--hijau);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${i+1}</div>
+            <div style="flex:1;">
+              <div style="font-weight:700;color:var(--hijau);font-size:14px">${rp(p.nominal)}</div>
+              <div style="font-size:11px;color:var(--abu)">${wkt(p.created_at)} &bull; ${p.metode || 'tunai'}</div>
+            </div>
+            <div style="display:flex;gap:5px;">
+              <button class="btn btn-outline btn-sm" onclick="bukaEditCicilan('${p.id}',${p.nominal},'${p.metode||'tunai'}')">✏️</button>
+              <button class="btn btn-merah btn-sm" onclick="hapusCicilan('${p.id}','${jid}','${pid}','${nama}')">🗑️</button>
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+        document.getElementById('riwayatCicilanList').innerHTML = html;
+      }
+      document.getElementById('modalRiwayatCicilan').classList.add('show');
+    }
+
+    function bukaEditCicilan(id, nominal, metode) {
+      _editCicilanId = id;
+      document.getElementById('mEditCicilanNominal').value = nominal;
+      document.getElementById('mEditCicilanMetode').value = metode;
+      document.getElementById('mEditCicilanAlert').className = 'alert';
+      document.getElementById('modalEditCicilan').classList.add('show');
+    }
+
+    async function simpanEditCicilan() {
+      const nominal = Number(document.getElementById('mEditCicilanNominal').value) || 0;
+      const metode = document.getElementById('mEditCicilanMetode').value;
+      if (!nominal) return alert2('mEditCicilanAlert', 'Nominal tidak boleh kosong!', 'error');
+
+      const { error } = await _supabase.from('pembayaran')
+        .update({ nominal, metode })
+        .eq('id', _editCicilanId);
+
+      if (error) return alert2('mEditCicilanAlert', 'Gagal: ' + error.message, 'error');
+
+      alert2('mEditCicilanAlert', '✅ Berhasil diperbarui!', 'success');
+      setTimeout(() => {
+        closeModal('modalEditCicilan');
+        closeModal('modalRiwayatCicilan');
+        loadPembayaranPage();
+      }, 800);
+    }
+
+    async function hapusCicilan(id, jid, pid, nama) {
+      try {
+        await showKonfirmasi({
+          icon: '🗑️',
+          judul: 'Hapus Cicilan?',
+          desc: 'Data cicilan ini akan dihapus permanen.',
+          okLabel: 'Ya, Hapus',
+          okClass: 'btn-merah'
+        });
+      } catch { return; }
+
+      await _supabase.from('pembayaran').delete().eq('id', id);
+      await openRiwayatCicilan(jid, pid, nama);
+      await renderPembayaranTable();
+      await renderPembayaranStats();
     }
 
     async function openModalBayar(jid, pid) {
