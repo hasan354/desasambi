@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pencatatan Desa Sambi </title>
+  <title>Sistem Pencatatan Desa Sambi</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -19,6 +19,8 @@
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700&family=Oswald:wght@600;700&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --hijau: #1a5c38;
@@ -1405,6 +1407,10 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">Rekapitulasi per Kelompok</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="salinInfoWA()">📱 Info WA</button>
+              <button class="btn btn-outline btn-sm" onclick="cetakLaporanPDF()">🖨️ Cetak PDF</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -1807,6 +1813,36 @@
   </div>
 
 
+  <!-- MODAL: PREVIEW INFO WA -->
+  <div class="modal-overlay" id="modalWAPreview">
+    <div class="modal" style="max-width:500px;">
+      <h3>📱 Info WhatsApp</h3>
+      <p style="font-size:12px;color:var(--abu);margin-bottom:10px;">Teks bisa diedit sebelum dikirim.</p>
+      <textarea id="waPreviewText" style="
+        background:var(--krem);
+        border-radius:10px;
+        padding:14px;
+        font-size:13px;
+        font-family:'Lato',sans-serif;
+        line-height:1.7;
+        white-space:pre-wrap;
+        word-break:break-word;
+        width:100%;
+        min-height:320px;
+        border:1px solid var(--krem-gelap);
+        color:var(--coklat);
+        outline:none;
+        resize:vertical;
+        box-sizing:border-box;
+      "></textarea>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modalWAPreview')">Tutup</button>
+        <button class="btn btn-outline btn-sm" id="btnSalinWA" onclick="salinTeksWA()">📋 Salin</button>
+        <button class="btn btn-hijau btn-sm" onclick="bukaWhatsApp()">💬 Buka WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: RIWAYAT CICILAN -->
   <div class="modal-overlay" id="modalRiwayatCicilan">
     <div class="modal" style="max-width:480px;">
@@ -1992,6 +2028,15 @@
       const el = document.getElementById(id);
       const pid = id.replace('riwayat_', '');
       const arrow = document.getElementById('arrow_' + pid);
+      if (!el) return;
+      const isOpen = el.style.display !== 'none';
+      el.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
+
+    function toggleSetor(id) {
+      const el = document.getElementById(id);
+      const arrow = document.getElementById('arr_' + id);
       if (!el) return;
       const isOpen = el.style.display !== 'none';
       el.style.display = isOpen ? 'none' : 'block';
@@ -2328,6 +2373,218 @@
       const newStatus = status === 'aktif' ? 'selesai' : 'aktif';
       await _supabase.from('program').update({ status: newStatus }).eq('id', id);
       await renderProgramTable();
+    }
+
+    // ============================================================
+    // INFO WA
+    // ============================================================
+    async function salinInfoWA() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳';
+
+      try {
+        const { data: kelompok } = await _supabase.from('kelompok').select('*');
+        const { data: pledges } = await _supabase.from('pembayaran').select('*').is('is_installment', false);
+        const { data: payments } = await _supabase.from('pembayaran').select('*').is('is_installment', true);
+        const { data: programs } = await _supabase.from('program').select('*').eq('status', 'aktif').limit(1);
+        const namaProgram = programs?.[0]?.nama || 'Program Iuran Desa';
+
+        const totalSanggupAll = (pledges || []).reduce((s, p) => s + Number(p.nominal), 0);
+        const totalKasDesaAll = (payments || []).filter(p => p.is_disetor === true || p.is_disetor === 'true').reduce((s, p) => s + Number(p.nominal), 0);
+        const pctGlobal = totalSanggupAll > 0 ? (totalKasDesaAll / totalSanggupAll * 100).toFixed(2) : '0.00';
+
+        let daftar = '';
+        (kelompok || []).forEach((k, i) => {
+          const ks = (pledges || []).filter(p => p.kelompok_id === k.id).reduce((s, p) => s + Number(p.nominal), 0);
+          const tkas = (payments || []).filter(p => p.kelompok_id === k.id && (p.is_disetor === true || p.is_disetor === 'true')).reduce((s, p) => s + Number(p.nominal), 0);
+          const pct = ks > 0 ? (tkas / ks * 100).toFixed(2) : '0.00';
+          daftar += `${i + 1}. ${k.nama}, masuk : ${pct}%\n`;
+        });
+
+        const tglHari = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        const teks =
+`Alhamdulillah sodakoh kesanggupan ${namaProgram}
+
+${daftar}
+Untuk Total prosentase masuk ${pctGlobal}%
+
+Mugo² Allah paring aman,slamet,lancar,barokah,lan ganti rizky sg langkung katah lan barokah...🤲🤲
+
+NB :
+1. Untuk prosentase masuk lebih dari 100% dikarenakan dalam perjalanan ada sodakoh susulan diluar kesanggupan awal yg belum dimasukan.
+2. Semoga yg belum 100% bisa segera diberi kemampuan dan segera menutup 100% bahkan lebih
+
+_${tglHari}_`;
+
+        // Tampilkan modal preview
+        document.getElementById('waPreviewText').value = teks;
+        document.getElementById('modalWAPreview').classList.add('show');
+
+      } catch (err) {
+        alert('Gagal: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📱 Info WA';
+      }
+    }
+
+    function salinTeksWA() {
+      const teks = document.getElementById('waPreviewText').value;
+      navigator.clipboard.writeText(teks).then(() => {
+        const btn = document.getElementById('btnSalinWA');
+        btn.textContent = '✅ Tersalin!';
+        setTimeout(() => { btn.textContent = '📋 Salin'; }, 2000);
+      });
+    }
+
+    function bukaWhatsApp() {
+      const teks = document.getElementById('waPreviewText').value;
+      const encoded = encodeURIComponent(teks);
+      // Buka WA — di HP langsung buka app, di desktop buka WA Web
+      window.open('https://wa.me/?text=' + encoded, '_blank');
+    }
+
+    // ============================================================
+    // CETAK LAPORAN PDF
+    // ============================================================
+    async function cetakLaporanPDF() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyiapkan...';
+
+      try {
+        // Ambil semua data
+        const { data: kelompok } = await _supabase.from('kelompok').select('*');
+        const { data: pledges } = await _supabase.from('pembayaran').select('*').is('is_installment', false);
+        const { data: payments } = await _supabase.from('pembayaran').select('*').is('is_installment', true);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const tglCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const pageW = doc.internal.pageSize.getWidth();
+
+        // ── HEADER ──
+        doc.setFillColor(26, 92, 56);
+        doc.rect(0, 0, pageW, 28, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('LAPORAN PROGRES IURAN DESA', pageW / 2, 11, { align: 'center' });
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Sistem Pencatatan Kesanggupan Iuran', pageW / 2, 18, { align: 'center' });
+        doc.text('Dicetak: ' + tglCetak, pageW / 2, 24, { align: 'center' });
+
+        // ── RINGKASAN ──
+        const totalSanggup = (pledges || []).reduce((s, p) => s + Number(p.nominal), 0);
+        const jumlahSanggup = new Set((pledges || []).map(p => p.jamaah_id)).size;
+        const totalKasDesa = (payments || []).filter(p => p.is_disetor === true || p.is_disetor === 'true').reduce((s, p) => s + Number(p.nominal), 0);
+        const totalTerbayar = (payments || []).reduce((s, p) => s + Number(p.nominal), 0);
+        const kekurangan = totalSanggup - totalKasDesa;
+        const pctGlobal = totalSanggup > 0 ? Math.round(totalKasDesa / totalSanggup * 100) : 0;
+
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('RINGKASAN', 14, 36);
+        doc.setDrawColor(26, 92, 56);
+        doc.line(14, 38, pageW - 14, 38);
+
+        const ringkasan = [
+          ['Jamaah Mengisi Kesanggupan', jumlahSanggup + ' orang'],
+          ['Total Kesanggupan', 'Rp ' + totalSanggup.toLocaleString('id-ID')],
+          ['Sudah Diterima Desa', 'Rp ' + totalKasDesa.toLocaleString('id-ID')],
+          ['Masih di Kelompok', 'Rp ' + (totalTerbayar - totalKasDesa).toLocaleString('id-ID')],
+          ['Kekurangan', 'Rp ' + kekurangan.toLocaleString('id-ID')],
+          ['Progres Setor', pctGlobal + '%'],
+        ];
+
+        doc.autoTable({
+          startY: 40,
+          head: [],
+          body: ringkasan,
+          theme: 'plain',
+          styles: { fontSize: 9, cellPadding: 2 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 70, textColor: [80, 80, 80] },
+            1: { cellWidth: 60 }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        // ── TABEL REKAP PER KELOMPOK ──
+        const startY = doc.lastAutoTable.finalY + 8;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('REKAP PER KELOMPOK', 14, startY);
+        doc.line(14, startY + 2, pageW - 14, startY + 2);
+
+        const rows = (kelompok || []).map((k, i) => {
+          const pledgesK = (pledges || []).filter(p => p.kelompok_id === k.id);
+          const ks = pledgesK.reduce((s, p) => s + Number(p.nominal), 0);
+          const jmlSanggup = new Set(pledgesK.map(p => p.jamaah_id)).size;
+          const tkas = (payments || []).filter(p => p.kelompok_id === k.id && (p.is_disetor === true || p.is_disetor === 'true')).reduce((s, p) => s + Number(p.nominal), 0);
+          const pct = ks > 0 ? Math.round(tkas / ks * 100) : 0;
+          return [
+            i + 1,
+            k.nama,
+            k.ketua || '-',
+            jmlSanggup + ' org',
+            'Rp ' + ks.toLocaleString('id-ID'),
+            'Rp ' + tkas.toLocaleString('id-ID'),
+            pct + '%'
+          ];
+        });
+
+        doc.autoTable({
+          startY: startY + 4,
+          head: [['#', 'Kelompok', 'Petugas', 'Jamaah', 'Kesanggupan', 'Tersetor', '%']],
+          body: rows,
+          theme: 'striped',
+          headStyles: { fillColor: [26, 92, 56], textColor: 255, fontSize: 8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 30 },
+            3: { cellWidth: 18, halign: 'center' },
+            4: { cellWidth: 32, halign: 'right' },
+            5: { cellWidth: 32, halign: 'right' },
+            6: { cellWidth: 15, halign: 'center' }
+          },
+          margin: { left: 14, right: 14 },
+          didParseCell: (data) => {
+            // Warna merah kalau pct < 40%, kuning kalau < 75%
+            if (data.column.index === 6 && data.section === 'body') {
+              const val = parseInt(data.cell.raw);
+              if (val >= 75) data.cell.styles.textColor = [26, 92, 56];
+              else if (val >= 40) data.cell.styles.textColor = [180, 130, 0];
+              else data.cell.styles.textColor = [192, 57, 43];
+            }
+          }
+        });
+
+        // ── FOOTER ──
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(`Halaman ${i} dari ${pageCount}`, pageW / 2, 290, { align: 'center' });
+        }
+
+        doc.save(`Laporan_Iuran_Desa_${tglCetak.replace(/ /g,'_')}.pdf`);
+
+      } catch (err) {
+        console.error('Gagal cetak PDF:', err);
+        alert('Gagal membuat PDF: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🖨️ Cetak PDF';
+      }
     }
 
     // ============================================================
@@ -2762,20 +3019,56 @@
     }
 
     async function renderRiwayatSetoran() {
-      const { data: logs } = await _supabase.from('logs').select('*').eq('kelompok_id', ME.kelompok_id).eq('aksi', 'Terima Setoran').order('created_at', { ascending: false });
-      let html = '';
-      if (!logs || logs.length === 0) {
-        document.getElementById('listRiwayatSetoran').innerHTML = `<div class="empty-state"><div class="icon">📜</div><p>Belum ada riwayat setoran ke kas desa</p></div>`;
+      const { data: payments } = await _supabase.from('pembayaran')
+        .select('*')
+        .eq('kelompok_id', ME.kelompok_id)
+        .is('is_installment', true)
+        .eq('is_disetor', true)
+        .order('created_at', { ascending: false });
+
+      if (!payments || payments.length === 0) {
+        document.getElementById('listRiwayatSetoran').innerHTML = `<div class="empty-state"><div class="icon">📜</div><p>Belum ada setoran yang dikirim ke kas desa</p></div>`;
         return;
       }
 
-      logs.forEach((l, i) => {
-        const tgl = l.created_at ? new Date(l.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-        html += `<div style="display:flex; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--krem-gelap); align-items:center;">
-      <div style="font-size:14px; font-weight:700; color:var(--hijau)">✅ ${l.detail}</div>
-      <div style="font-size:12px; color:var(--abu); text-align:right;">Disetor pada:<br><strong>${tgl}</strong></div>
-    </div>`;
+      // Kelompokkan per tanggal (hari)
+      const grouped = {};
+      payments.forEach(p => {
+        const d = p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tanpa Tanggal';
+        if (!grouped[d]) grouped[d] = [];
+        grouped[d].push(p);
       });
+
+      const totalAll = payments.reduce((s, p) => s + Number(p.nominal), 0);
+
+      let html = '';
+
+      let idx = 0;
+      Object.entries(grouped).forEach(([tglStr, items]) => {
+        const totalHari = items.reduce((s, p) => s + Number(p.nominal), 0);
+        const groupId = 'setor_group_' + idx++;
+
+        // Rincian (hidden by default)
+        const rincian = items.map(p => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px 9px 32px;border-bottom:1px solid var(--krem-gelap);font-size:12px;background:var(--krem);">
+            <span style="color:var(--coklat)">${p.nama_jamaah}</span>
+            <span style="color:var(--hijau);font-weight:700">${rp(p.nominal)}</span>
+          </div>`).join('');
+
+        html += `
+        <div style="border-bottom:1px solid var(--krem-gelap);">
+          <div onclick="toggleSetor('${groupId}')" style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;cursor:pointer;">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--coklat)">📅 ${tglStr}</div>
+              <div style="font-size:13px;color:var(--hijau);margin-top:4px;font-weight:700">💸 Setor ke desa sebesar <strong>${rp(totalHari)}</strong></div>
+              <div style="font-size:12px;color:var(--abu);margin-top:2px">${items.length} transaksi</div>
+            </div>
+            <span id="arr_${groupId}" style="color:var(--abu);font-size:14px;transition:transform 0.2s">▼</span>
+          </div>
+          <div id="${groupId}" style="display:none;">${rincian}</div>
+        </div>`;
+      });
+
       document.getElementById('listRiwayatSetoran').innerHTML = html;
     }
 
