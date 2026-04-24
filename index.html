@@ -1045,13 +1045,46 @@
       #tblPembayaran td:first-child {
         display: none;
       }
-      /* Sembunyikan header tabel di mobile */
-      #tblPembayaran ~ * thead,
+      /* Sembunyikan header tabel di mobile - semua tabel */
       .table-wrap table thead {
         display: none;
       }
-      /* Khusus tabel pembayaran */
-      #kelompokPembayaran .table-wrap table thead {
+
+      /* Card-list style untuk semua tabel di mobile */
+      .table-wrap table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border: 1px solid var(--krem-gelap);
+        overflow: hidden;
+        background: var(--putih);
+      }
+      .table-wrap table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 14px;
+        border-bottom: 1px solid var(--krem-gelap);
+        font-size: 13px;
+        gap: 8px;
+      }
+      .table-wrap table tbody td:last-child {
+        border-bottom: none;
+      }
+      .table-wrap table tbody td:first-child {
+        display: none;
+      }
+      .table-wrap table tbody td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--abu);
+        font-size: 11px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+        min-width: 80px;
+      }
+      .table-wrap table tbody td:not([data-label]):before {
         display: none;
       }
 
@@ -1064,40 +1097,67 @@
         display: none
       }
 
-      /* Penyesuaian Jamaah Card untuk Mobile */
+      /* Penyesuaian Jamaah Card untuk Mobile - Compact List */
+      .jamaah-list {
+        gap: 6px;
+      }
+
       .jamaah-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin-bottom: 6px;
+      }
+
+      .jamaah-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+        flex-shrink: 0;
       }
 
       .jamaah-info {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .jamaah-info h4 {
+        font-size: 13px;
+        margin-bottom: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .jamaah-info .meta {
+        font-size: 11px;
+        gap: 6px;
       }
 
       .jamaah-actions {
-        width: 100%;
         display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        gap: 8px;
-        border-top: 1px solid var(--krem-gelap);
-        padding-top: 12px;
-        margin-top: 4px;
+        flex-direction: row;
+        gap: 5px;
+        flex-shrink: 0;
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+        width: auto;
       }
 
       .jamaah-actions .btn {
-        flex: 1;
-        text-align: center;
-        padding: 8px 10px;
-        font-size: 12px;
+        flex: none;
+        padding: 5px 10px;
+        font-size: 11px;
       }
 
       .jamaah-actions .badge {
-        width: 100%;
+        width: auto;
         text-align: center;
-        padding: 8px;
+        padding: 5px 8px;
+        font-size: 11px;
       }
 
       /* Penyesuaian Tabel dan Form */
@@ -1415,7 +1475,6 @@
         <div class="card">
           <div class="card-header">
             <div class="card-title">💳 Pembayaran Cicilan</div>
-            <button class="btn btn-hijau btn-sm" onclick="openModalBayar(null)">+ Catat Cicilan</button>
           </div>
           <div class="table-wrap">
             <table>
@@ -1991,15 +2050,15 @@
 
         rows += `<tr>
       <td>${i + 1}</td>
-      <td><strong>${k.nama}</strong></td>
-      <td>${k.ketua || '-'}</td>
-      <td><strong style="color:var(--hijau)">${jumlahSanggup}</strong> jamaah</td>
-      <td><strong style="color:var(--hijau)">${rp(ks)}</strong></td>
-      <td>
+      <td data-label="Kelompok"><strong>${k.nama}</strong></td>
+      <td data-label="Petugas">${k.ketua || '-'}</td>
+      <td data-label="Jamaah"><strong style="color:var(--hijau)">${jumlahSanggup}</strong> jamaah</td>
+      <td data-label="Kesanggupan"><strong style="color:var(--hijau)">${rp(ks)}</strong></td>
+      <td data-label="Diterima Desa">
         <strong style="color:var(--emas)">${rp(tkas)}</strong><br>
         <small style="color:var(--abu)">Masih Di Kelompok: ${rp(tb - tkas)}</small>
       </td>
-      <td style="text-align:center;">
+      <td data-label="% Setor" style="text-align:center;">
         <strong style="font-size:16px;color:${pctColor}">${pctSetor}%</strong><br>
         <small style="color:var(--abu)">${rp(tkas)} / ${rp(ks)}</small>
       </td>
@@ -2058,11 +2117,11 @@
       (programs || []).forEach((p, i) => {
         rows += `<tr>
       <td>${i + 1}</td>
-      <td><strong>${p.nama}</strong>${p.keterangan ? `<br><small style="color:var(--abu)">${p.keterangan}</small>` : ''}</td>
-      <td>${rp(p.target_nominal)}</td>
-      <td>${tgl(p.deadline)}</td>
-      <td><span class="badge ${p.status === 'aktif' ? 'badge-hijau' : 'badge-abu'}">${p.status}</span></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+      <td data-label="Program"><strong>${p.nama}</strong>${p.keterangan ? `<br><small style="color:var(--abu)">${p.keterangan}</small>` : ''}</td>
+      <td data-label="Target">${rp(p.target_nominal)}</td>
+      <td data-label="Deadline">${tgl(p.deadline)}</td>
+      <td data-label="Status"><span class="badge ${p.status === 'aktif' ? 'badge-hijau' : 'badge-abu'}">${p.status}</span></td>
+      <td data-label="Aksi" style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="openModalProgram('${p.id}')">Edit</button>
         <button class="btn btn-outline btn-sm" onclick="toggleProgram('${p.id}','${p.status}')">${p.status === 'aktif' ? 'Selesai' : 'Aktifkan'}</button>
         <button class="btn btn-merah btn-sm" onclick="konfirmHapus('program','${p.id}','${p.nama}')">Hapus</button>
@@ -2095,10 +2154,10 @@
           const ids = pendingPayments.map(p => p.id).join(',');
           rows += `<tr>
         <td>${idx++}</td>
-        <td><strong>${k.nama}</strong></td>
-        <td>${k.ketua || '-'}</td>
-        <td><strong style="color:var(--merah); font-size:16px;">${rp(totalPending)}</strong><br><small style="color:var(--abu)">Dari ${pendingPayments.length} transaksi</small></td>
-        <td>
+        <td data-label="Kelompok"><strong>${k.nama}</strong></td>
+        <td data-label="Petugas">${k.ketua || '-'}</td>
+        <td data-label="Belum Disetor"><strong style="color:var(--merah); font-size:16px;">${rp(totalPending)}</strong><br><small style="color:var(--abu)">Dari ${pendingPayments.length} transaksi</small></td>
+        <td data-label="Aksi">
           <button class="btn btn-hijau btn-sm" onclick="terimaSetoran('${k.id}', '${k.nama}', '${ids}', ${totalPending})">✅ Terima Uang</button>
         </td>
       </tr>`;
@@ -2241,10 +2300,10 @@
 
         rows += `<tr>
       <td>${i + 1}</td>
-      <td><strong>${k.nama}</strong></td>
-      <td>${k.ketua || '-'}</td>
-      <td>${jml} jamaah</td>
-      <td>
+      <td data-label="Kelompok"><strong>${k.nama}</strong></td>
+      <td data-label="Petugas">${k.ketua || '-'}</td>
+      <td data-label="Anggota">${jml} jamaah</td>
+      <td data-label="Aksi">
         <button class="btn btn-outline btn-sm" onclick="openModalKelompok('${k.id}')">Edit</button>
         <button class="btn btn-merah btn-sm" onclick="konfirmHapus('kelompok','${k.id}','${k.nama}')">Hapus</button>
       </td>
@@ -2535,11 +2594,11 @@
       (users || []).forEach((u, i) => {
         rows += `<tr>
       <td>${i + 1}</td>
-      <td><strong>${u.username}</strong></td>
-      <td><span class="badge ${u.role === 'admin_desa' ? 'badge-emas' : 'badge-hijau'}">${u.role === 'admin_desa' ? 'Admin Desa' : 'Admin Kelompok'}</span></td>
-      <td>${u.kelompok?.nama || '-'}</td>
-      <td><span class="badge ${u.aktif ? 'badge-hijau' : 'badge-merah'}">${u.aktif ? 'Aktif' : 'Nonaktif'}</span></td>
-      <td>
+      <td data-label="Username"><strong>${u.username}</strong></td>
+      <td data-label="Role"><span class="badge ${u.role === 'admin_desa' ? 'badge-emas' : 'badge-hijau'}">${u.role === 'admin_desa' ? 'Admin Desa' : 'Admin Kelompok'}</span></td>
+      <td data-label="Kelompok">${u.kelompok?.nama || '-'}</td>
+      <td data-label="Status"><span class="badge ${u.aktif ? 'badge-hijau' : 'badge-merah'}">${u.aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+      <td data-label="Aksi">
         <button class="btn btn-outline btn-sm" onclick="toggleUser('${u.id}', ${u.aktif})">${u.aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>
         ${u.username !== 'admin' ? `<button class="btn btn-merah btn-sm" onclick="konfirmHapus('user','${u.id}','${u.username}')">Hapus</button>` : ''}
       </td>
