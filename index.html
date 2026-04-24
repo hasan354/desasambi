@@ -1343,7 +1343,6 @@
                   <th>Kesanggupan</th>
                   <th>Terbayar</th>
                   <th>Sisa</th>
-                  <th>Status</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -2333,14 +2332,15 @@
         <strong style="color:var(--hijau)">${rp(totalBayar)}</strong>
         <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div>
       </td>
-      <td><strong style="color:${sisa > 0 ? 'var(--merah)' : 'var(--hijau)'}">${rp(sisa)}</strong></td>
-      <td><span class="badge ${sisa === 0 ? 'badge-hijau' : 'badge-emas'}">${sisa === 0 ? 'LUNAS' : 'CICIL'}</span></td>
       <td>
-        ${sisa > 0 ? `<button class="btn btn-hijau btn-sm" onclick="openModalBayar('${pl.jamaah_id}', '${pl.program_id}')">Bayar Cicilan</button>` : '✅'}
+        <strong style="color:${sisa > 0 ? 'var(--merah)' : 'var(--hijau)'}">${sisa === 0 ? '✅ Lunas' : rp(sisa)}</strong>
+      </td>
+      <td>
+        ${sisa > 0 ? `<button class="btn btn-hijau btn-sm" onclick="openModalBayar('${pl.jamaah_id}', '${pl.program_id}')">+ Bayar</button>` : '-'}
       </td>
     </tr>`;
       });
-      document.getElementById('tblPembayaran').innerHTML = rows || emptyRow(7, 'Belum ada jamaah yang sanggup iuran');
+      document.getElementById('tblPembayaran').innerHTML = rows || emptyRow(6, 'Belum ada jamaah yang sanggup iuran');
     }
 
     async function openModalBayar(jid, pid) {
