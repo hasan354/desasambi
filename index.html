@@ -906,6 +906,123 @@
       margin-left: auto;
     }
 
+    /* ── REKAP VISUAL PER KELOMPOK ── */
+    .rekap-kelompok-item {
+      border: 1.5px solid var(--krem-gelap);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .rekap-kelompok-header {
+      background: linear-gradient(135deg, var(--hijau), var(--hijau-muda));
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .rekap-kelompok-nama {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .rekap-kelompok-petugas {
+      font-size: 11px;
+      opacity: .8;
+      margin-top: 2px;
+    }
+    .rekap-kelompok-badge {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .rekap-kelompok-body {
+      background: var(--putih);
+      padding: 0;
+    }
+    .rekap-stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 0;
+    }
+    .rekap-stat-cell {
+      padding: 14px 16px;
+      border-right: 1.5px solid var(--krem-gelap);
+    }
+    .rekap-stat-cell:last-child {
+      border-right: none;
+      background: var(--hijau);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 80px;
+      padding: 14px 12px;
+    }
+    .rekap-stat-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: var(--abu);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .rekap-stat-cell:last-child .rekap-stat-label {
+      color: rgba(255,255,255,.75);
+    }
+    .rekap-stat-value {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--hijau);
+      line-height: 1.1;
+    }
+    .rekap-stat-cell:last-child .rekap-stat-value {
+      color: #fff;
+      font-size: 24px;
+    }
+    .rekap-stat-sub {
+      font-size: 11px;
+      color: var(--abu);
+      margin-top: 2px;
+    }
+    .rekap-stat-cell:last-child .rekap-stat-sub {
+      color: rgba(255,255,255,.75);
+    }
+    .rekap-sisa-value {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--merah);
+    }
+    .rekap-progress-wrap {
+      padding: 0 16px 12px;
+      background: var(--putih);
+    }
+    .rekap-progress-bar {
+      background: var(--krem-gelap);
+      border-radius: 20px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .rekap-progress-fill {
+      height: 100%;
+      border-radius: 20px;
+      transition: width .6s ease;
+    }
+    @media(max-width:600px){
+      .rekap-stat-row { grid-template-columns: 1fr 1fr; }
+      .rekap-stat-cell:last-child { grid-column: 1/-1; flex-direction: row; justify-content: space-between; min-width: unset; }
+      .rekap-stat-value { font-size: 16px; }
+      .rekap-sisa-value { font-size: 16px; }
+    }
+
     @media(max-width:600px) {
       .header {
         padding: 0 14px;
@@ -1404,7 +1521,9 @@
       <!-- ===== DESA: DASHBOARD ===== -->
       <div id="desaDashboard" class="page active">
         <div class="stats-grid" id="desaStats"></div>
-        <div class="card">
+
+        <!-- REKAPITULASI VISUAL PER KELOMPOK -->
+        <div class="card" id="cardRekapVisual">
           <div class="card-header">
             <div class="card-title">Rekapitulasi per Kelompok</div>
             <div style="display:flex;gap:8px;">
@@ -1412,22 +1531,7 @@
               <button class="btn btn-outline btn-sm" onclick="cetakLaporanPDF()">🖨️ Cetak PDF</button>
             </div>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nama Kelompok</th>
-                  <th>Petugas</th>
-                  <th>Jamaah</th>
-                  <th>Kesanggupan</th>
-                  <th>Diterima Desa</th>
-                  <th>Prosentase</th>
-                </tr>
-              </thead>
-              <tbody id="tblRekap"></tbody>
-            </table>
-          </div>
+          <div id="rekapVisualList"></div>
         </div>
       </div>
 
@@ -2283,26 +2387,55 @@
         const jumlahSanggup = new Set(pledgesKelompok.map(p => p.jamaah_id)).size;
         const tb = (payments || []).filter(p => p.kelompok_id === k.id).reduce((s, p) => s + Number(p.nominal), 0);
         const tkas = (payments || []).filter(p => p.kelompok_id === k.id && (p.is_disetor === true || p.is_disetor === 'true')).reduce((s, p) => s + Number(p.nominal), 0);
+        const sisa = ks - tkas;
         const pctSetor = ks > 0 ? Math.round((tkas / ks) * 100) : 0;
-        const pctColor = pctSetor >= 75 ? 'var(--hijau)' : pctSetor >= 40 ? 'var(--emas)' : '#e74c3c';
+        const barColor = pctSetor >= 75
+          ? 'linear-gradient(90deg,var(--hijau-terang),var(--hijau))'
+          : pctSetor >= 40
+            ? 'linear-gradient(90deg,var(--emas-muda),var(--emas))'
+            : 'linear-gradient(90deg,#e74c3c,#c0392b)';
 
-        rows += `<tr>
-      <td>${i + 1}</td>
-      <td data-label="Kelompok"><strong>${k.nama}</strong></td>
-      <td data-label="Petugas">${k.ketua || '-'}</td>
-      <td data-label="Jamaah"><strong style="color:var(--hijau)">${jumlahSanggup}</strong> jamaah</td>
-      <td data-label="Kesanggupan"><strong style="color:var(--hijau)">${rp(ks)}</strong></td>
-      <td data-label="Diterima Desa">
-        <strong style="color:var(--emas)">${rp(tkas)}</strong><br>
-        <small style="color:var(--abu)">Masih Di Kelompok: ${rp(tb - tkas)}</small>
-      </td>
-      <td data-label="% Setor" style="text-align:center;">
-        <strong style="font-size:16px;color:${pctColor}">${pctSetor}%</strong><br>
-        <small style="color:var(--abu)">${rp(tkas)} / ${rp(ks)}</small>
-      </td>
-    </tr>`;
+        rows += `
+        <div class="rekap-kelompok-item">
+          <div class="rekap-kelompok-header">
+            <div>
+              <div class="rekap-kelompok-nama">👥 ${k.nama}</div>
+              <div class="rekap-kelompok-petugas">Petugas: ${k.ketua || '-'}</div>
+            </div>
+            <div class="rekap-kelompok-badge">${jumlahSanggup} jamaah</div>
+          </div>
+          <div class="rekap-kelompok-body">
+            <div class="rekap-stat-row">
+              <div class="rekap-stat-cell">
+                <div class="rekap-stat-label">Kesanggupan</div>
+                <div class="rekap-stat-value">${rp(ks)}</div>
+                <div class="rekap-stat-sub">${jumlahSanggup} jamaah</div>
+              </div>
+              <div class="rekap-stat-cell">
+                <div class="rekap-stat-label">Terbayar</div>
+                <div class="rekap-stat-value">${rp(tkas)}</div>
+                <div class="rekap-stat-sub">Di kelompok: ${rp(tb - tkas)}</small></div>
+              </div>
+              <div class="rekap-stat-cell">
+                <div class="rekap-stat-label">Sisa</div>
+                <div class="rekap-sisa-value">${rp(sisa)}</div>
+                <div class="rekap-stat-sub">&nbsp;</div>
+              </div>
+              <div class="rekap-stat-cell">
+                <div class="rekap-stat-label">Progres</div>
+                <div class="rekap-stat-value" style="font-size:28px">${pctSetor}%</div>
+              </div>
+            </div>
+            <div class="rekap-progress-wrap">
+              <div class="rekap-progress-bar">
+                <div class="rekap-progress-fill" style="width:${pctSetor}%;background:${barColor}"></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
       });
-      document.getElementById('tblRekap').innerHTML = rows || emptyRow(7, 'Belum ada data kelompok');
+      document.getElementById('rekapVisualList').innerHTML = rows ||
+        `<div class="empty-state"><div class="icon">📂</div><p>Belum ada data kelompok</p></div>`;
     }
 
     // ============================================================
