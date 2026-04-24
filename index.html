@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pencatatan Desa Sambi Boyolali barat</title>
+  <title>Sistem Pencatatan Kesanggupan Iuran Desa</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -1392,6 +1392,7 @@
     <div class="nav-tabs" id="navKelompok" style="display:none;">
       <div class="nav-tab active" onclick="showPage('kelompokDashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
       <div class="nav-tab" onclick="showPage('kelompokPembayaran',this)"><span class="nav-icon">💳</span>Cicilan</div>
+      <div class="nav-tab" onclick="showPage('kelompokRiwayat',this)"><span class="nav-icon">📜</span>Riwayat</div>
       <div class="nav-tab" onclick="showPage('kelompokPledge',this)"><span class="nav-icon">🤝</span>Kesanggupan</div>
       <div class="nav-tab" onclick="showPage('kelompokList',this)"><span class="nav-icon">👤</span>Jamaah</div>
     </div>
@@ -1605,13 +1606,6 @@
       <div id="kelompokPembayaran" class="page">
         <div class="stats-grid" id="bayarStats"></div>
 
-        <div class="card" id="cardRiwayatSetoran" style="display:none; margin-bottom:24px;">
-          <div class="card-header">
-            <div class="card-title">Riwayat Setoran ke Kas Desa</div>
-          </div>
-          <div id="listRiwayatSetoran"></div>
-        </div>
-
         <div class="card">
           <div class="card-header">
             <div class="card-title">💳 Pembayaran Cicilan</div>
@@ -1631,6 +1625,16 @@
               <tbody id="tblPembayaran"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== KELOMPOK: RIWAYAT SETORAN ===== -->
+      <div id="kelompokRiwayat" class="page">
+        <div class="card" id="cardRiwayatSetoran">
+          <div class="card-header">
+            <div class="card-title">📜 Riwayat Setoran ke Kas Desa</div>
+          </div>
+          <div id="listRiwayatSetoran"></div>
         </div>
       </div>
 
@@ -2141,7 +2145,8 @@
         kelompokDashboard: loadKelompokDashboard,
         kelompokList: renderJamaahTable,
         kelompokPledge: loadPledgePage,
-        kelompokPembayaran: loadPembayaranPage
+        kelompokPembayaran: loadPembayaranPage,
+        kelompokRiwayat: loadRiwayatPage
       };
       try {
         if (map[id]) await map[id]();
@@ -2699,13 +2704,11 @@
       // Cek dulu apakah ada program aktif
       const { data: programs } = await _supabase.from('program').select('*').eq('status', 'aktif');
       const adaProgramAktif = (programs || []).length > 0;
-
       const cardPembayaran = document.querySelector('#kelompokPembayaran .card');
 
       if (!adaProgramAktif) {
         // Sembunyikan stats dan tabel, tampilkan pesan + riwayat read-only
         document.getElementById('bayarStats').innerHTML = '';
-        document.getElementById('cardRiwayatSetoran').style.display = 'none';
 
         // Ambil semua cicilan lama untuk ditampilkan read-only
         const { data: pledges } = await _supabase.from('pembayaran').select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', false);
@@ -2751,18 +2754,20 @@
       if (existingBanner) existingBanner.remove();
 
       await renderPembayaranStats();
-      await renderRiwayatSetoran();
       await renderPembayaranTable();
+    }
+
+    async function loadRiwayatPage() {
+      await renderRiwayatSetoran();
     }
 
     async function renderRiwayatSetoran() {
       const { data: logs } = await _supabase.from('logs').select('*').eq('kelompok_id', ME.kelompok_id).eq('aksi', 'Terima Setoran').order('created_at', { ascending: false });
       let html = '';
       if (!logs || logs.length === 0) {
-        document.getElementById('cardRiwayatSetoran').style.display = 'none';
+        document.getElementById('listRiwayatSetoran').innerHTML = `<div class="empty-state"><div class="icon">📜</div><p>Belum ada riwayat setoran ke kas desa</p></div>`;
         return;
       }
-      document.getElementById('cardRiwayatSetoran').style.display = 'block';
 
       logs.forEach((l, i) => {
         const tgl = l.created_at ? new Date(l.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
