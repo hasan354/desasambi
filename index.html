@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pencatatan Kesanggupan Iuran Desa</title>
+  <title>Sistem Pencatatan Desa Sambi Boyolali barat</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -1542,7 +1542,7 @@
       <!-- ===== KELOMPOK: DASHBOARD ===== -->
       <div id="kelompokDashboard" class="page">
         <div class="stats-grid" id="kelompokStats"></div>
-        <div class="card">
+        <div class="card" id="cardProgresPanel">
           <div class="card-header">
             <div class="card-title">Progres Pembayaran per Program</div>
           </div>
@@ -2696,13 +2696,67 @@
     // PEMBAYARAN (INSTALLMENTS)
     // ============================================================
     async function loadPembayaranPage() {
+      // Cek dulu apakah ada program aktif
+      const { data: programs } = await _supabase.from('program').select('*').eq('status', 'aktif');
+      const adaProgramAktif = (programs || []).length > 0;
+
+      const cardPembayaran = document.querySelector('#kelompokPembayaran .card');
+
+      if (!adaProgramAktif) {
+        // Sembunyikan stats dan tabel, tampilkan pesan + riwayat read-only
+        document.getElementById('bayarStats').innerHTML = '';
+        document.getElementById('cardRiwayatSetoran').style.display = 'none';
+
+        // Ambil semua cicilan lama untuk ditampilkan read-only
+        const { data: pledges } = await _supabase.from('pembayaran').select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', false);
+        const { data: payments } = await _supabase.from('pembayaran').select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', true);
+
+        let riwayatRows = '';
+        (pledges || []).forEach((pl, i) => {
+          const totalBayar = (payments || []).filter(p => p.jamaah_id === pl.jamaah_id && p.program_id === pl.program_id).reduce((s, p) => s + Number(p.nominal), 0);
+          const sisa = Math.max(0, pl.nominal - totalBayar);
+          const pct = pl.nominal > 0 ? Math.min(100, Math.round(totalBayar / pl.nominal * 100)) : 0;
+          riwayatRows += `<tr style="--row-color:${['#1a5c38','#c9a227','#2980b9','#8e44ad','#e67e22','#27ae60'][i % 6]}">
+            <td>${i + 1}</td>
+            <td data-label="Nama"><strong style="color:var(--row-color)">${pl.nama_jamaah}</strong></td>
+            <td data-label="Kesanggupan">${rp(pl.nominal)}</td>
+            <td data-label="Terbayar">
+              <strong style="color:var(--hijau)">${rp(totalBayar)}</strong>
+              <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%;background:var(--row-color)"></div></div>
+            </td>
+            <td data-label="Sisa"><strong style="color:${sisa===0?'var(--hijau)':'var(--merah)'}">${sisa===0?'✅ Lunas':rp(sisa)}</strong></td>
+            <td data-label="Aksi"><button class="btn btn-outline btn-sm" onclick="openRiwayatCicilan('${pl.jamaah_id}','${pl.program_id}','${pl.nama_jamaah}')">📋 Riwayat</button></td>
+          </tr>`;
+        });
+
+        document.getElementById('tblPembayaran').innerHTML = riwayatRows || emptyRow(6, 'Belum ada data cicilan');
+
+        // Tampilkan banner info di atas tabel
+        if (cardPembayaran) {
+          const existingBanner = document.getElementById('noProgramBanner');
+          if (!existingBanner) {
+            const banner = document.createElement('div');
+            banner.id = 'noProgramBanner';
+            banner.className = 'info-box';
+            banner.style.cssText = 'background:rgba(201,162,39,0.1);border-left-color:var(--emas);color:#7a5c00;margin-bottom:16px;';
+            banner.innerHTML = '🎉 <strong>Semua program telah selesai.</strong> Data di bawah adalah riwayat cicilan (hanya baca).';
+            cardPembayaran.insertBefore(banner, cardPembayaran.querySelector('.table-wrap'));
+          }
+        }
+        return;
+      }
+
+      // Ada program aktif — tampilkan normal
+      const existingBanner = document.getElementById('noProgramBanner');
+      if (existingBanner) existingBanner.remove();
+
       await renderPembayaranStats();
       await renderRiwayatSetoran();
       await renderPembayaranTable();
     }
 
     async function renderRiwayatSetoran() {
-      const { data: logs } = await _supabase.from('log').select('*').eq('kelompok_id', ME.kelompok_id).eq('aksi', 'Terima Setoran').order('created_at', { ascending: false });
+      const { data: logs } = await _supabase.from('logs').select('*').eq('kelompok_id', ME.kelompok_id).eq('aksi', 'Terima Setoran').order('created_at', { ascending: false });
       let html = '';
       if (!logs || logs.length === 0) {
         document.getElementById('cardRiwayatSetoran').style.display = 'none';
@@ -3175,9 +3229,21 @@
       }
 
       const progressBox = document.getElementById('programProgressPanel');
+      const cardProgres = document.getElementById('cardProgresPanel');
+
       if (!sortedPrograms.length) {
         selectedDashboardProgramId = null;
-        progressBox.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Belum ada program tersedia</p></div>`;
+        if (cardProgres) cardProgres.style.display = 'none';
+        return;
+      }
+
+      // Ada program — tampilkan card progres
+      if (cardProgres) cardProgres.style.display = '';
+
+      // Sembunyikan card progres kalau tidak ada program aktif
+      const adaAktif = sortedPrograms.some(p => p.status === 'aktif');
+      if (!adaAktif && cardProgres) {
+        cardProgres.style.display = 'none';
         return;
       }
 
@@ -3261,8 +3327,8 @@
           // Coba ambil dari tabel 'jamaah'
           let { data: fetchedData, error } = await db.from('jamaah').select('*');
 
-          // Jika error atau kosong, coba nama tabel alternatif 'data_jamaah_rows'
-          if (error || !fetchedData || fetchedData.length === 0) {
+          // Jika error atau kosong DAN menggunakan DB lama, coba tabel alternatif
+          if ((error || !fetchedData || fetchedData.length === 0) && db === _supabaseOld) {
             console.log('DEBUG: Mencoba tabel alternatif "data_jamaah_rows"...');
             const { data: altData, error: altError } = await db.from('data_jamaah_rows').select('*');
             if (!altError && altData && altData.length > 0) {
