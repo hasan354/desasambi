@@ -344,7 +344,7 @@
       background: rgba(255, 255, 255, .3)
     }
 
-    /* NAV */
+    /* NAV - Bottom Navigation (WhatsApp style) */
     .nav-tabs {
       background: var(--putih);
       border-bottom: 2px solid var(--krem-gelap);
@@ -963,13 +963,96 @@
       }
 
       .nav-tabs {
-        padding: 0 14px;
-        gap: 8px;
+        /* Di mobile: pindah ke bawah, gaya WhatsApp */
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        border-bottom: none;
+        border-top: 1px solid var(--krem-gelap);
+        padding: 0;
+        gap: 0;
+        z-index: 500;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+        justify-content: space-around;
       }
 
       .nav-tab {
-        padding: 12px 14px;
-        font-size: 12px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 4px 10px;
+        font-size: 10px;
+        letter-spacing: 0;
+        border-bottom: none;
+        border-top: 3px solid transparent;
+        margin-bottom: 0;
+        gap: 3px;
+        min-width: 0;
+        white-space: normal;
+        text-align: center;
+      }
+
+      .nav-tab .nav-icon {
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .nav-tab.active {
+        color: var(--hijau);
+        border-top-color: var(--hijau);
+        border-bottom-color: transparent;
+        background: rgba(26,92,56,0.05);
+      }
+
+      /* Beri ruang bawah untuk konten agar tidak tertutup bottom nav */
+      .content {
+        padding-bottom: 80px !important;
+      }
+
+      /* Tabel pembayaran jadi card list di mobile */
+      #tblPembayaran tr {
+        display: block;
+        margin-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border: 1px solid var(--krem-gelap);
+        overflow: hidden;
+      }
+      #tblPembayaran td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--krem-gelap);
+        font-size: 13px;
+      }
+      #tblPembayaran td:last-child {
+        border-bottom: none;
+      }
+      #tblPembayaran td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--abu);
+        font-size: 11px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+        margin-right: 8px;
+      }
+      #tblPembayaran td:first-child {
+        display: none;
+      }
+      /* Sembunyikan header tabel di mobile */
+      #tblPembayaran ~ * thead,
+      .table-wrap table thead {
+        display: none;
+      }
+      /* Khusus tabel pembayaran */
+      #kelompokPembayaran .table-wrap table thead {
+        display: none;
       }
 
       .login-card {
@@ -1097,20 +1180,20 @@
 
     <!-- NAV ADMIN DESA -->
     <div class="nav-tabs" id="navDesa" style="display:none;">
-      <div class="nav-tab active" onclick="showPage('desaDashboard',this)">📊 Dashboard</div>
-      <div class="nav-tab" onclick="showPage('desaSetoran',this)">💰 Penerimaan</div>
-      <div class="nav-tab" onclick="showPage('desaProgram',this)">📋 Program</div>
-      <div class="nav-tab" onclick="showPage('desaLog',this)">📝 Log</div>
-      <div class="nav-tab" onclick="showPage('desaKelompok',this)">👥 Kelompok</div>
-      <div class="nav-tab" onclick="showPage('desaUser',this)">🔑 Pengguna</div>
+      <div class="nav-tab active" onclick="showPage('desaDashboard',this)"><span class="nav-icon"></span>📊</span>Dashboard</div>
+      <div class="nav-tab" onclick="showPage('desaSetoran',this)"><span class="nav-icon">💰</span>Penerimaan</div>
+      <div class="nav-tab" onclick="showPage('desaProgram',this)"><span class="nav-icon">📋</span>Program</div>
+      <div class="nav-tab" onclick="showPage('desaLog',this)"><span class="nav-icon">📝</span>Log</div>
+      <div class="nav-tab" onclick="showPage('desaKelompok',this)"><span class="nav-icon">👥</span>Kelompok</div>
+      <div class="nav-tab" onclick="showPage('desaUser',this)"><span class="nav-icon">🔑</span>Pengguna</div>
     </div>
 
     <!-- NAV ADMIN KELOMPOK -->
     <div class="nav-tabs" id="navKelompok" style="display:none;">
-      <div class="nav-tab active" onclick="showPage('kelompokDashboard',this)">📊 Dashboard</div>
-      <div class="nav-tab" onclick="showPage('kelompokPembayaran',this)">Pembayaran Cicilan</div>
-      <div class="nav-tab" onclick="showPage('kelompokPledge',this)">🤝 Input Kesanggupan</div>
-      <div class="nav-tab" onclick="showPage('kelompokList',this)">Data Jamaah</div>
+      <div class="nav-tab active" onclick="showPage('kelompokDashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+      <div class="nav-tab" onclick="showPage('kelompokPembayaran',this)"><span class="nav-icon">💳</span>Cicilan</div>
+      <div class="nav-tab" onclick="showPage('kelompokPledge',this)"><span class="nav-icon">🤝</span>Kesanggupan</div>
+      <div class="nav-tab" onclick="showPage('kelompokList',this)"><span class="nav-icon">👤</span>Jamaah</div>
     </div>
 
     <div class="content">
@@ -2326,16 +2409,18 @@
 
         rows += `<tr>
       <td>${i + 1}</td>
-      <td><strong>${pl.nama_jamaah}</strong></td>
-      <td>${rp(pl.nominal)}</td>
-      <td>
-        <strong style="color:var(--hijau)">${rp(totalBayar)}</strong>
-        <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <td data-label="Nama"><strong>${pl.nama_jamaah}</strong></td>
+      <td data-label="Kesanggupan">${rp(pl.nominal)}</td>
+      <td data-label="Terbayar">
+        <div>
+          <strong style="color:var(--hijau)">${rp(totalBayar)}</strong>
+          <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
       </td>
-      <td>
+      <td data-label="Sisa">
         <strong style="color:${sisa > 0 ? 'var(--merah)' : 'var(--hijau)'}">${sisa === 0 ? '✅ Lunas' : rp(sisa)}</strong>
       </td>
-      <td>
+      <td data-label="Aksi">
         ${sisa > 0 ? `<button class="btn btn-hijau btn-sm" onclick="openModalBayar('${pl.jamaah_id}', '${pl.program_id}')">+ Bayar</button>` : '-'}
       </td>
     </tr>`;
