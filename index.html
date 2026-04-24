@@ -1453,7 +1453,7 @@
       <div id="desaProgram" class="page">
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Program Musyawaroh (Gedung Desa, dsb)</div>
+            <div class="card-title">Program Desa</div>
             <button class="btn btn-hijau btn-sm" onclick="openModalProgram(null)">+ Buat Program Baru</button>
           </div>
           <div class="table-wrap">
@@ -1542,7 +1542,6 @@
       <!-- ===== KELOMPOK: DASHBOARD ===== -->
       <div id="kelompokDashboard" class="page">
         <div class="stats-grid" id="kelompokStats"></div>
-        <div class="card" id="cardInfoProgram"></div>
         <div class="card">
           <div class="card-header">
             <div class="card-title">Progres Pembayaran per Program</div>
@@ -1578,12 +1577,13 @@
 
       <!-- ===== KELOMPOK: PLEDGE (KESANGGUPAN) ===== -->
       <div id="kelompokPledge" class="page">
+        <div class="card" id="cardInfoProgram"></div>
         <div class="card">
           <div class="card-header">
             <div class="card-title">🤝 Kesanggupan Jamaah</div>
             <button class="btn btn-hijau btn-sm" onclick="openModalPledge(null)">+ Catat Kesanggupan Baru</button>
           </div>
-          <div class="info-box">Catat komitmen jamaah untuk program yang sedang berjalan (Gedung Desa, dsb).</div>
+          <div class="info-box">Catat komitmen jamaah untuk program yang sedang berjalan Dari Desa.</div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -1983,6 +1983,16 @@
     }
 
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function toggleRiwayatProgram(id) {
+      const el = document.getElementById(id);
+      const pid = id.replace('riwayat_', '');
+      const arrow = document.getElementById('arrow_' + pid);
+      if (!el) return;
+      const isOpen = el.style.display !== 'none';
+      el.style.display = isOpen ? 'none' : 'block';
+      if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
 
     function showKonfirmasi({ icon = '❓', judul = 'Konfirmasi', desc = '', okLabel = 'Ya', okClass = 'btn-hijau' } = {}) {
       return new Promise((resolve, reject) => {
@@ -2497,17 +2507,109 @@
       const knama = (ME.kelompok?.nama || '').trim();
       const db = getDB(knama);
 
-      // Ambil program aktif
-      const { data: programs } = await _supabase.from('program').select('*').eq('status', 'aktif');
+      // Ambil semua program
+      const { data: programs } = await _supabase.from('program').select('*').order('created_at', { ascending: false });
+      const programAktif = (programs || []).filter(p => p.status === 'aktif');
+      const programSelesai = (programs || []).filter(p => p.status !== 'aktif');
+
+      const adaProgramAktif = programAktif.length > 0;
+
+      // Tampilkan/sembunyikan tombol tambah dan tabel
+      const btnTambah = document.querySelector('#kelompokPledge .btn-hijau');
+      const tabelWrap = document.querySelector('#kelompokPledge .table-wrap');
+      const infoBox = document.querySelector('#kelompokPledge .info-box');
+
+      if (btnTambah) btnTambah.style.display = adaProgramAktif ? '' : 'none';
+      if (tabelWrap) tabelWrap.style.display = adaProgramAktif ? '' : 'none';
+      if (infoBox) infoBox.style.display = adaProgramAktif ? '' : 'none';
+
+      // Update cardInfoProgram
+      const box = document.getElementById('cardInfoProgram');
+      if (box) {
+        if (adaProgramAktif) {
+          const progAkt = programAktif[0];
+          box.style.display = 'block';
+          box.innerHTML = `<div class="card-header"><div class="card-title">📢 Program Aktif</div></div>
+            <div class="info-box">
+              <strong>📋 ${progAkt.nama}</strong><br>
+              Target: <strong>${rp(progAkt.target_nominal || 0)}</strong> &bull; Deadline: <strong>${tgl(progAkt.deadline)}</strong>
+              <p style="margin-top:8px;font-size:12px;color:var(--abu)">${progAkt.keterangan || 'Silakan kumpulkan kesanggupan dari jamaah.'}</p>
+            </div>`;
+        } else {
+          // Tidak ada program aktif — tampilkan info + riwayat program selesai
+          box.style.display = 'block';
+          let riwayatHtml = '';
+          if (programSelesai.length > 0) {
+            // Ambil data pledge per program selesai
+            const { data: allPledges } = await _supabase.from('pembayaran')
+              .select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', false);
+            const { data: allPayments } = await _supabase.from('pembayaran')
+              .select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', true);
+
+            riwayatHtml = '<div style="margin-top:14px;"><strong style="font-size:13px;color:var(--abu)">RIWAYAT PROGRAM</strong>';
+            programSelesai.forEach(p => {
+              const totalSanggup = (allPledges || []).filter(x => x.program_id === p.id).reduce((s, x) => s + Number(x.nominal), 0);
+              const totalBayar = (allPayments || []).filter(x => x.program_id === p.id).reduce((s, x) => s + Number(x.nominal), 0);
+              const lunas = totalSanggup > 0 && totalBayar >= totalSanggup;
+              const pledgesProgram = (allPledges || []).filter(x => x.program_id === p.id);
+
+              // Buat daftar jamaah yang mengisi kesanggupan
+              let daftarJamaah = '';
+              if (pledgesProgram.length > 0) {
+                daftarJamaah = pledgesProgram.map((x, idx) => `
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:${idx%2===0?'var(--krem)':'var(--putih)'};font-size:12px;">
+                    <span>${idx+1}. ${x.nama_jamaah}</span>
+                    <strong style="color:var(--hijau)">${rp(x.nominal)}</strong>
+                  </div>`).join('');
+              } else {
+                daftarJamaah = `<div style="padding:12px;font-size:12px;color:var(--abu);text-align:center;">Belum ada yang mengisi kesanggupan</div>`;
+              }
+
+              riwayatHtml += `
+              <div style="border-bottom:1px solid var(--krem-gelap);">
+                <div onclick="toggleRiwayatProgram('riwayat_${p.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;">
+                  <div style="flex:1;">
+                    <div style="font-weight:700;font-size:13px;color:var(--coklat)">📋 ${p.nama}</div>
+                    <div style="font-size:11px;color:var(--abu);margin-top:2px">
+                      Kesanggupan: <strong>${rp(totalSanggup)}</strong> &bull; Terbayar: <strong>${rp(totalBayar)}</strong>
+                    </div>
+                  </div>
+                  <span class="badge ${lunas ? 'badge-hijau' : 'badge-emas'}">${lunas ? '✅ Lunas' : '⏳ Belum Lunas'}</span>
+                  <span id="arrow_${p.id}" style="color:var(--abu);font-size:12px;transition:transform 0.2s">▼</span>
+                </div>
+                <div id="riwayat_${p.id}" style="display:none;border-radius:8px;overflow:hidden;margin-bottom:10px;border:1px solid var(--krem-gelap);">
+                  <div style="background:var(--hijau);color:white;padding:8px 12px;font-size:11px;font-weight:700;text-transform:uppercase;">
+                    Daftar Jamaah — ${pledgesProgram.length} orang
+                  </div>
+                  ${daftarJamaah}
+                </div>
+              </div>`;
+            });
+            riwayatHtml += '</div>';
+          }
+
+          box.innerHTML = `
+            <div class="card-header"><div class="card-title">📢 Program</div></div>
+            <div style="text-align:center;padding:20px 16px;">
+              <div style="font-size:40px;margin-bottom:10px;">🎉</div>
+              <div style="font-weight:700;font-size:15px;color:var(--coklat)">Tidak ada program aktif saat ini</div>
+              <div style="font-size:13px;color:var(--abu);margin-top:6px;">Semua program telah selesai. Tunggu program baru dari admin desa.</div>
+            </div>
+            ${riwayatHtml}`;
+        }
+      }
+
+      if (!adaProgramAktif) return;
+
       const { data: jamaah } = await db.from('jamaah').select('*');
       const { data: pledges } = await _supabase.from('pembayaran').select('*').eq('kelompok_id', ME.kelompok_id).is('is_installment', false);
 
-      // Filter jamaah by kelompok (if not old DB)
+      // Filter jamaah by kelompok
       let jData = (db === _supabaseOld) ? (jamaah || []) : (jamaah || []).filter(j => (j.kelompok || '').trim().toUpperCase() === knama.toUpperCase());
 
       // Isi select program di modal
       const selProg = document.getElementById('mPlProgram');
-      selProg.innerHTML = (programs || []).map(p => `<option value="${p.id}">${p.nama}</option>`).join('');
+      selProg.innerHTML = programAktif.map(p => `<option value="${p.id}">${p.nama}</option>`).join('');
 
       // Isi select jamaah di modal
       const selJam = document.getElementById('mPlJamaah');
@@ -3108,6 +3210,11 @@
     </div>
     <div style="display:flex;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--krem-gelap);">
       <div style="flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--krem-gelap);background:var(--putih);">
+        <div style="font-size:10px;color:var(--abu);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Kesanggupan</div>
+        <div style="font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--coklat)">${rp(totalPledgeProgram)}</div>
+        <div style="font-size:11px;color:var(--abu);margin-top:2px">${jamaahPledgeIds.size} jamaah</div>
+      </div>
+      <div style="flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--krem-gelap);background:var(--putih);">
         <div style="font-size:10px;color:var(--abu);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Terbayar</div>
         <div style="font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--hijau)">${rp(totalBayarProgram)}</div>
         <div style="font-size:11px;color:var(--abu);margin-top:2px">${jamaahBayarIds.size} jamaah</div>
@@ -3115,7 +3222,6 @@
       <div style="flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--krem-gelap);background:var(--putih);">
         <div style="font-size:10px;color:var(--abu);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Sisa</div>
         <div style="font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--merah)">${rp(sisaProgram)}</div>
-        <div style="font-size:11px;color:var(--abu);margin-top:2px">${jamaahPledgeIds.size} sanggup</div>
       </div>
       <div style="flex:0 0 70px;padding:12px 10px;text-align:center;background:${pctProgram>=75?'var(--hijau)':pctProgram>=40?'var(--emas)':'var(--merah)'};color:white;">
         <div style="font-size:10px;text-transform:uppercase;font-weight:700;margin-bottom:4px;opacity:0.85">Progres</div>
@@ -3123,13 +3229,8 @@
       </div>
     </div>
     <div>
-      <div class="progress-bar" style="height:10px;margin-bottom:8px;">
+      <div class="progress-bar" style="height:10px;">
         <div class="progress-fill" style="width:${pctProgram}%"></div>
-      </div>
-      <div style="font-size:12px;color:var(--abu);">
-        Kesanggupan: <strong>${rp(totalPledgeProgram)}</strong> &bull;
-        Terbayar: <strong>${rp(totalBayarProgram)}</strong> &bull;
-        Sisa: <strong>${rp(sisaProgram)}</strong>
       </div>
     </div>
   `;
