@@ -1013,13 +1013,14 @@
         padding-bottom: 80px !important;
       }
 
-      /* Tabel pembayaran jadi card list di mobile */
+      /* Tabel pembayaran - CARD dengan warna per jamaah */
       #tblPembayaran tr {
         display: block;
         margin-bottom: 12px;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.07);
         border: 1px solid var(--krem-gelap);
+        border-left: 4px solid var(--row-color, var(--hijau));
         overflow: hidden;
       }
       #tblPembayaran td {
@@ -1030,9 +1031,7 @@
         border-bottom: 1px solid var(--krem-gelap);
         font-size: 13px;
       }
-      #tblPembayaran td:last-child {
-        border-bottom: none;
-      }
+      #tblPembayaran td:last-child { border-bottom: none; }
       #tblPembayaran td:before {
         content: attr(data-label);
         font-weight: 700;
@@ -1042,16 +1041,13 @@
         flex-shrink: 0;
         margin-right: 8px;
       }
-      #tblPembayaran td:first-child {
-        display: none;
-      }
-      /* Sembunyikan header tabel di mobile - semua tabel */
-      .table-wrap table thead {
-        display: none;
-      }
+      #tblPembayaran td:first-child { display: none; }
 
-      /* Card-list style HANYA untuk tabel kompleks */
-      #tblRekap tr, #tblSetoran tr, #tblProgram tr, #tblPembayaran tr {
+      /* Sembunyikan header semua tabel di mobile */
+      .table-wrap table thead { display: none; }
+
+      /* ===== REKAP & SETORAN - CARD style ===== */
+      #tblRekap tr, #tblSetoran tr {
         display: block;
         margin-bottom: 10px;
         border-radius: 12px;
@@ -1060,7 +1056,7 @@
         overflow: hidden;
         background: var(--putih);
       }
-      #tblRekap td, #tblSetoran td, #tblProgram td, #tblPembayaran td {
+      #tblRekap td, #tblSetoran td {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -1069,16 +1065,9 @@
         font-size: 13px;
         gap: 8px;
       }
-      #tblRekap td:last-child, #tblSetoran td:last-child,
-      #tblProgram td:last-child, #tblPembayaran td:last-child {
-        border-bottom: none;
-      }
-      #tblRekap td:first-child, #tblSetoran td:first-child,
-      #tblProgram td:first-child, #tblPembayaran td:first-child {
-        display: none;
-      }
-      #tblRekap td:before, #tblSetoran td:before,
-      #tblProgram td:before, #tblPembayaran td:before {
+      #tblRekap td:last-child, #tblSetoran td:last-child { border-bottom: none; }
+      #tblRekap td:first-child, #tblSetoran td:first-child { display: none; }
+      #tblRekap td:before, #tblSetoran td:before {
         content: attr(data-label);
         font-weight: 700;
         color: var(--abu);
@@ -1088,25 +1077,155 @@
         min-width: 80px;
       }
 
-      /* Tabel simple (Kelompok & Pengguna) - tetap tabel tapi compact */
-      #tblKelompok, #tblUser {
-        font-size: 12px;
+      /* ===== PROGRAM - COMPACT CARD dengan header berwarna ===== */
+      #tblProgram tr {
+        display: block;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+        border: 1px solid var(--krem-gelap);
+        background: var(--putih);
       }
-      #tblKelompok thead, #tblUser thead {
-        display: table-header-group;
+      #tblProgram td { display: none; }
+      #tblProgram td[data-label="Program"] {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        background: var(--hijau);
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+        border-bottom: none;
       }
-      #tblKelompok th, #tblUser th {
-        font-size: 10px;
-        padding: 8px 8px;
+      #tblProgram td[data-label="Program"]:before { display: none; }
+      #tblProgram td[data-label="Target"],
+      #tblProgram td[data-label="Deadline"],
+      #tblProgram td[data-label="Status"],
+      #tblProgram td[data-label="Aksi"] {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--krem-gelap);
+        font-size: 13px;
+        gap: 8px;
       }
-      #tblKelompok td, #tblUser td {
-        padding: 8px 8px;
-        font-size: 12px;
+      #tblProgram td[data-label="Aksi"] { border-bottom: none; }
+      #tblProgram td[data-label="Target"]:before { content: "Target"; font-weight:700; color:var(--abu); font-size:11px; text-transform:uppercase; min-width:70px; }
+      #tblProgram td[data-label="Deadline"]:before { content: "Deadline"; font-weight:700; color:var(--abu); font-size:11px; text-transform:uppercase; min-width:70px; }
+      #tblProgram td[data-label="Status"]:before { content: "Status"; font-weight:700; color:var(--abu); font-size:11px; text-transform:uppercase; min-width:70px; }
+      #tblProgram td[data-label="Aksi"]:before { content: "Aksi"; font-weight:700; color:var(--abu); font-size:11px; text-transform:uppercase; min-width:70px; }
+
+      /* ===== KELOMPOK - LIST ITEM style (seperti kontak HP) ===== */
+      #tblKelompok thead { display: none; }
+      #tblKelompok tr {
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--krem-gelap);
+        gap: 10px;
+        background: var(--putih);
       }
-      /* Sembunyikan kolom nomor urut di tabel simple */
-      #tblKelompok td:first-child, #tblUser td:first-child,
-      #tblKelompok th:first-child, #tblUser th:first-child {
+      #tblKelompok tr:first-child { border-radius: 10px 10px 0 0; }
+      #tblKelompok tr:last-child { border-bottom: none; border-radius: 0 0 10px 10px; }
+      #tblKelompok td { display: none; border: none; padding: 0; }
+      #tblKelompok td[data-label="Kelompok"] {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+      #tblKelompok td[data-label="Kelompok"]:before { display: none; }
+      #tblKelompok td[data-label="Petugas"] {
+        display: block;
+        font-size: 11px;
+        color: var(--abu);
+      }
+      #tblKelompok td[data-label="Petugas"]:before { display: none; }
+      #tblKelompok td[data-label="Anggota"] {
+        display: block;
+        font-size: 11px;
+        color: var(--hijau);
+        font-weight: 700;
+      }
+      #tblKelompok td[data-label="Anggota"]:before { display: none; }
+      #tblKelompok td[data-label="Aksi"] {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+      }
+      #tblKelompok td[data-label="Aksi"]:before { display: none; }
+      #tblKelompok td:first-child { display: none; }
+
+      /* ===== PENGGUNA - LIST ITEM style ===== */
+      #tblUser thead { display: none; }
+      #tblUser tr {
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--krem-gelap);
+        gap: 10px;
+        background: var(--putih);
+      }
+      #tblUser tr:first-child { border-radius: 10px 10px 0 0; }
+      #tblUser tr:last-child { border-bottom: none; border-radius: 0 0 10px 10px; }
+      #tblUser td { display: none; border: none; padding: 0; }
+      #tblUser td[data-label="Username"] {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 3px;
+      }
+      #tblUser td[data-label="Username"]:before { display: none; }
+      #tblUser td[data-label="Role"] {
+        display: block;
+      }
+      #tblUser td[data-label="Role"]:before { display: none; }
+      #tblUser td[data-label="Kelompok"] {
         display: none;
+      }
+      #tblUser td[data-label="Aksi"] {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+      }
+      #tblUser td[data-label="Aksi"]:before { display: none; }
+      #tblUser td:first-child { display: none; }
+
+      /* ===== LOG - TIMELINE style ===== */
+      #desaLog .log-item {
+        position: relative;
+        padding-left: 44px;
+        padding-bottom: 16px;
+        border-bottom: none;
+      }
+      #desaLog .log-item:before {
+        content: '';
+        position: absolute;
+        left: 17px;
+        top: 36px;
+        bottom: 0;
+        width: 2px;
+        background: var(--krem-gelap);
+      }
+      #desaLog .log-item:last-child:before { display: none; }
+      #desaLog .log-icon {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--hijau);
+        color: white;
+        font-size: 14px;
+        box-shadow: 0 2px 6px rgba(26,92,56,0.3);
+      }
+      #desaLog .log-time {
+        display: block;
+        margin-left: 0;
+        margin-top: 3px;
+        font-size: 11px;
       }
 
       .login-card {
@@ -2321,7 +2440,7 @@
 
         rows += `<tr>
       <td>${i + 1}</td>
-      <td data-label="Kelompok"><strong>${k.nama}</strong></td>
+      <td data-label="Kelompok"><strong>${k.nama}</strong><small style="color:var(--abu);margin-top:2px">${k.ketua || '-'} &bull; ${jml} sanggup</small></td>
       <td data-label="Petugas">${k.ketua || '-'}</td>
       <td data-label="Anggota">${jml} jamaah</td>
       <td data-label="Aksi">
@@ -2487,14 +2606,14 @@
         const sisa = Math.max(0, pl.nominal - totalBayar);
         const pct = pl.nominal > 0 ? Math.min(100, Math.round(totalBayar / pl.nominal * 100)) : 0;
 
-        rows += `<tr>
+        rows += `<tr style="--row-color:${['#1a5c38','#c9a227','#2980b9','#8e44ad','#e67e22','#27ae60'][i % 6]}">
       <td>${i + 1}</td>
-      <td data-label="Nama"><strong>${pl.nama_jamaah}</strong></td>
+      <td data-label="Nama"><strong style="color:var(--row-color)">${pl.nama_jamaah}</strong></td>
       <td data-label="Kesanggupan">${rp(pl.nominal)}</td>
       <td data-label="Terbayar">
         <div>
           <strong style="color:var(--hijau)">${rp(totalBayar)}</strong>
-          <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%;background:var(--row-color)"></div></div>
         </div>
       </td>
       <td data-label="Sisa">
@@ -2615,17 +2734,20 @@
       (users || []).forEach((u, i) => {
         rows += `<tr>
       <td>${i + 1}</td>
-      <td data-label="Username"><strong>${u.username}</strong></td>
+      <td data-label="Username">
+        <strong>${u.username}</strong>
+        <span style="font-size:11px;color:var(--abu)">${u.kelompok?.nama || 'Semua Kelompok'}</span>
+        <span class="badge ${u.aktif ? 'badge-hijau' : 'badge-merah'}" style="font-size:10px">${u.aktif ? 'Aktif' : 'Nonaktif'}</span>
+      </td>
       <td data-label="Role"><span class="badge ${u.role === 'admin_desa' ? 'badge-emas' : 'badge-hijau'}">${u.role === 'admin_desa' ? 'Admin Desa' : 'Admin Kelompok'}</span></td>
       <td data-label="Kelompok">${u.kelompok?.nama || '-'}</td>
-      <td data-label="Status"><span class="badge ${u.aktif ? 'badge-hijau' : 'badge-merah'}">${u.aktif ? 'Aktif' : 'Nonaktif'}</span></td>
       <td data-label="Aksi">
         <button class="btn btn-outline btn-sm" onclick="toggleUser('${u.id}', ${u.aktif})">${u.aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>
         ${u.username !== 'admin' ? `<button class="btn btn-merah btn-sm" onclick="konfirmHapus('user','${u.id}','${u.username}')">Hapus</button>` : ''}
       </td>
     </tr>`;
       });
-      document.getElementById('tblUser').innerHTML = rows || emptyRow(6, 'Belum ada pengguna');
+      document.getElementById('tblUser').innerHTML = rows || emptyRow(5, 'Belum ada pengguna');
     }
 
     async function toggleUser(id, currentStatus) {
