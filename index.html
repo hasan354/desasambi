@@ -940,6 +940,7 @@
       font-size: 11px;
       font-weight: 700;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .rekap-kelompok-body {
       background: var(--putih);
@@ -951,44 +952,48 @@
       gap: 0;
     }
     .rekap-stat-cell {
-      padding: 14px 16px;
+      padding: 10px 12px;
       border-right: 1.5px solid var(--krem-gelap);
+      border-bottom: 1.5px solid var(--krem-gelap);
     }
     .rekap-stat-cell:last-child {
       border-right: none;
+      border-bottom: none;
       background: var(--hijau);
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-width: 80px;
-      padding: 14px 12px;
+      min-width: 68px;
+      padding: 10px 8px;
     }
     .rekap-stat-label {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 900;
       color: var(--abu);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
+      letter-spacing: .8px;
+      margin-bottom: 3px;
     }
     .rekap-stat-cell:last-child .rekap-stat-label {
       color: rgba(255,255,255,.75);
     }
     .rekap-stat-value {
       font-family: 'Oswald', sans-serif;
-      font-size: 20px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--hijau);
       line-height: 1.1;
+      word-break: break-all;
     }
     .rekap-stat-cell:last-child .rekap-stat-value {
       color: #fff;
-      font-size: 24px;
+      font-size: 20px;
+      word-break: normal;
     }
     .rekap-stat-sub {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--abu);
       margin-top: 2px;
     }
@@ -997,18 +1002,23 @@
     }
     .rekap-sisa-value {
       font-family: 'Oswald', sans-serif;
-      font-size: 20px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--merah);
+      word-break: break-all;
     }
     .rekap-progress-wrap {
-      padding: 0 16px 12px;
+      padding: 7px 12px 9px;
       background: var(--putih);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .rekap-progress-bar {
+      flex: 1;
       background: var(--krem-gelap);
       border-radius: 20px;
-      height: 8px;
+      height: 6px;
       overflow: hidden;
     }
     .rekap-progress-fill {
@@ -1016,11 +1026,13 @@
       border-radius: 20px;
       transition: width .6s ease;
     }
-    @media(max-width:600px){
-      .rekap-stat-row { grid-template-columns: 1fr 1fr; }
-      .rekap-stat-cell:last-child { grid-column: 1/-1; flex-direction: row; justify-content: space-between; min-width: unset; }
-      .rekap-stat-value { font-size: 16px; }
-      .rekap-sisa-value { font-size: 16px; }
+    .rekap-progress-pct {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--hijau);
+      white-space: nowrap;
+      min-width: 34px;
+      text-align: right;
     }
 
     @media(max-width:600px) {
@@ -1527,7 +1539,8 @@
           <div class="card-header">
             <div class="card-title">Rekapitulasi per Kelompok</div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-outline btn-sm" onclick="salinInfoWA()">📱 Info WA</button>
+              <button class="btn btn-outline btn-sm" onclick="salinInfoWA()">📱 Info Progres ke Grup</button>
+              <button class="btn btn-hijau btn-sm" onclick="bukaModalBroadcast()">📢 Broadcast WA ke petugas KLMPK</button>
               <button class="btn btn-outline btn-sm" onclick="cetakLaporanPDF()">🖨️ Cetak PDF</button>
             </div>
           </div>
@@ -1882,6 +1895,8 @@
           placeholder="cth: Kelompok 1 - Dusun Utara"></div>
       <div class="form-group"><label>Nama Petugas</label><input type="text" id="mKKetua"
           placeholder="Nama Petugas kelompok"></div>
+      <div class="form-group"><label>No HP / WA Petugas</label><input type="text" id="mKNoHp"
+          placeholder="08xx xxxx xxxx"></div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModal('modalKelompok')">Batal</button>
         <button class="btn btn-hijau btn-sm" onclick="simpanKelompok()">Simpan</button>
@@ -1943,6 +1958,28 @@
         <button class="btn btn-outline" onclick="closeModal('modalWAPreview')">Tutup</button>
         <button class="btn btn-outline btn-sm" id="btnSalinWA" onclick="salinTeksWA()">📋 Salin</button>
         <button class="btn btn-hijau btn-sm" onclick="bukaWhatsApp()">💬 Buka WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BROADCAST WA KE ADMIN KELOMPOK -->
+  <div class="modal-overlay" id="modalBroadcast">
+    <div class="modal" style="max-width:560px;">
+      <h3>📢 Broadcast Pesan ke Admin Kelompok</h3>
+      <p style="font-size:12px;color:var(--abu);margin-bottom:12px;">Edit pesan lalu kirim ke tiap admin kelompok.</p>
+      <div class="form-group">
+        <label>Pesan</label>
+        <textarea id="broadcastTeks" rows="10" style="
+          width:100%;padding:12px;border:2px solid var(--krem-gelap);border-radius:10px;
+          font-size:13px;font-family:'Lato',sans-serif;line-height:1.7;
+          color:var(--coklat);background:var(--krem);outline:none;resize:vertical;
+          box-sizing:border-box;
+        "></textarea>
+      </div>
+      <div id="broadcastKelompokList" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;max-height:260px;overflow-y:auto;"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modalBroadcast')">Tutup</button>
+        <button class="btn btn-outline btn-sm" onclick="salinBroadcast()">📋 Salin Teks</button>
       </div>
     </div>
   </div>
@@ -2430,6 +2467,7 @@
               <div class="rekap-progress-bar">
                 <div class="rekap-progress-fill" style="width:${pctSetor}%;background:${barColor}"></div>
               </div>
+              <div class="rekap-progress-pct" style="color:${pctSetor>=75?'var(--hijau)':pctSetor>=40?'var(--emas)':'var(--merah)'}">${pctSetor}%</div>
             </div>
           </div>
         </div>`;
@@ -2577,6 +2615,81 @@ _${tglHari}_`;
       const encoded = encodeURIComponent(teks);
       // Buka WA — di HP langsung buka app, di desktop buka WA Web
       window.open('https://wa.me/?text=' + encoded, '_blank');
+    }
+
+    // ── BROADCAST WA KE ADMIN KELOMPOK ──────────────────────────
+    async function bukaModalBroadcast() {
+      // Template pesan default
+      const tglHari = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      const template =
+`Assalamu'alaikum Wr. Wb.
+
+Dana masuk Sodakoh PEMBANGUNAN TANAH SB DESA tahap 2 :
+
+Tgl 23/11/2025 masuk Rp 1.200.000
+Tgl 01/03/2026 masuk Rp 2.000.000
+Total masuk : Rp 3.200.000
+
+NB : Data kesanggupan awal masuk Rp 3.800.000, kekurangan Rp 600.000
+
+Mugo² Allah paring manfaat lan barokah 🙏
+
+_${tglHari}_`;
+
+      document.getElementById('broadcastTeks').value = template;
+
+      // Muat daftar kelompok beserta no HP
+      try {
+        const { data: kelompok } = await _supabase.from('kelompok').select('id,nama,ketua,no_hp');
+        const container = document.getElementById('broadcastKelompokList');
+
+        if (!kelompok || !kelompok.length) {
+          container.innerHTML = '<div style="color:var(--abu);font-size:13px;">Belum ada kelompok terdaftar.</div>';
+        } else {
+          container.innerHTML = `
+            <div style="font-size:12px;font-weight:700;color:var(--hijau);margin-bottom:4px;">
+              Kirim ke Admin Kelompok:
+            </div>` +
+            kelompok.map(k => {
+              const hp = (k.no_hp || '').replace(/\D/g, '');
+              const punya = hp.length >= 8;
+              return `
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--krem);border-radius:8px;border:1px solid var(--krem-gelap);">
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:700;">${k.nama}</div>
+                  <div style="font-size:11px;color:var(--abu);">${k.ketua || '-'} · ${k.no_hp || '<span style="color:#c0392b">No HP belum diisi</span>'}</div>
+                </div>
+                ${punya
+                  ? `<button class="btn btn-hijau btn-sm" style="white-space:nowrap"
+                      onclick="kirimBroadcastKe('${hp}')">💬 Kirim WA</button>`
+                  : `<button class="btn btn-outline btn-sm" style="opacity:.4;cursor:not-allowed" disabled>Tidak ada HP</button>`
+                }
+              </div>`;
+            }).join('');
+        }
+      } catch(e) {
+        document.getElementById('broadcastKelompokList').innerHTML =
+          `<div style="color:#c0392b;font-size:13px;">Gagal muat kelompok: ${e.message}</div>`;
+      }
+
+      document.getElementById('modalBroadcast').classList.add('show');
+    }
+
+    function kirimBroadcastKe(hp) {
+      const teks = document.getElementById('broadcastTeks').value;
+      const encoded = encodeURIComponent(teks);
+      // Format nomor: 08xx → 628xx
+      const nomor = hp.startsWith('0') ? '62' + hp.slice(1) : hp;
+      window.open('https://wa.me/' + nomor + '?text=' + encoded, '_blank');
+    }
+
+    function salinBroadcast() {
+      const teks = document.getElementById('broadcastTeks').value;
+      navigator.clipboard.writeText(teks).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ Tersalin!';
+        setTimeout(() => { btn.textContent = '📋 Salin Teks'; }, 2000);
+      });
     }
 
     // ============================================================
@@ -2845,23 +2958,26 @@ _${tglHari}_`;
         document.getElementById('mKelompokTitle').textContent = '✏️ Edit Kelompok';
         document.getElementById('mKNama').value = k.nama;
         document.getElementById('mKKetua').value = k.ketua || '';
+        document.getElementById('mKNoHp').value = k.no_hp || '';
       } else {
         document.getElementById('mKelompokTitle').textContent = '👥 Tambah Kelompok';
         document.getElementById('mKNama').value = '';
         document.getElementById('mKKetua').value = '';
+        document.getElementById('mKNoHp').value = '';
       }
       document.getElementById('modalKelompok').classList.add('show');
     }
 
     async function simpanKelompok() {
-      const nama = document.getElementById('mKNama').value.trim();
+      const nama  = document.getElementById('mKNama').value.trim();
       const ketua = document.getElementById('mKKetua').value.trim();
+      const no_hp = document.getElementById('mKNoHp').value.trim();
       if (!nama) return alert2('mKelompokAlert', 'Nama kelompok wajib diisi!', 'error');
 
       if (editKelompokId) {
-        await _supabase.from('kelompok').update({ nama, ketua }).eq('id', editKelompokId);
+        await _supabase.from('kelompok').update({ nama, ketua, no_hp }).eq('id', editKelompokId);
       } else {
-        await _supabase.from('kelompok').insert([{ nama, ketua }]);
+        await _supabase.from('kelompok').insert([{ nama, ketua, no_hp }]);
       }
 
       closeModal('modalKelompok');
