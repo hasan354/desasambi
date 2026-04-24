@@ -2987,32 +2987,27 @@
       Status: <strong>${selectedProgram.status || '-'}</strong> &bull; Deadline: <strong>${tgl(selectedProgram.deadline)}</strong><br>
       Target Program: <strong>${rp(selectedProgram.target_nominal || 0)}</strong>
     </div>
-    <div class="stats-grid" style="margin-bottom:14px;">
-      <div class="stat-card">
-        <div class="stat-label"><div class="stat-icon">📊</div> Persentase Bayar</div>
-        <div class="stat-value">${pctProgram}%</div>
-        <div class="stat-sub">Dari total kesanggupan</div>
+    <div style="display:flex;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--krem-gelap);">
+      <div style="flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--krem-gelap);background:var(--putih);">
+        <div style="font-size:10px;color:var(--abu);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Terbayar</div>
+        <div style="font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--hijau)">${rp(totalBayarProgram)}</div>
+        <div style="font-size:11px;color:var(--abu);margin-top:2px">${jamaahBayarIds.size} jamaah</div>
       </div>
-      <div class="stat-card emas">
-        <div class="stat-label"><div class="stat-icon">💰</div> Total Terbayar</div>
-        <div class="stat-value">${rp(totalBayarProgram)}</div>
-        <div class="stat-sub">${jamaahBayarIds.size} jamaah sudah bayar</div>
+      <div style="flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--krem-gelap);background:var(--putih);">
+        <div style="font-size:10px;color:var(--abu);text-transform:uppercase;font-weight:700;margin-bottom:4px;">Sisa</div>
+        <div style="font-size:18px;font-weight:700;font-family:'Oswald',sans-serif;color:var(--merah)">${rp(sisaProgram)}</div>
+        <div style="font-size:11px;color:var(--abu);margin-top:2px">${jamaahPledgeIds.size} sanggup</div>
       </div>
-      <div class="stat-card merah">
-        <div class="stat-label"><div class="stat-icon">⏳</div> Sisa Tagihan</div>
-        <div class="stat-value">${rp(sisaProgram)}</div>
-        <div class="stat-sub">${jamaahPledgeIds.size} jamaah sanggup</div>
+      <div style="flex:0 0 70px;padding:12px 10px;text-align:center;background:${pctProgram>=75?'var(--hijau)':pctProgram>=40?'var(--emas)':'var(--merah)'};color:white;">
+        <div style="font-size:10px;text-transform:uppercase;font-weight:700;margin-bottom:4px;opacity:0.85">Progres</div>
+        <div style="font-size:22px;font-weight:700;font-family:'Oswald',sans-serif">${pctProgram}%</div>
       </div>
     </div>
     <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--abu);margin-bottom:6px;">
-        <span>Progres Pembayaran</span>
-        <strong style="color:var(--hijau)">${pctProgram}%</strong>
-      </div>
-      <div class="progress-bar" style="height:14px;">
+      <div class="progress-bar" style="height:10px;margin-bottom:8px;">
         <div class="progress-fill" style="width:${pctProgram}%"></div>
       </div>
-      <div style="font-size:12px;color:var(--abu);margin-top:8px;">
+      <div style="font-size:12px;color:var(--abu);">
         Kesanggupan: <strong>${rp(totalPledgeProgram)}</strong> &bull;
         Terbayar: <strong>${rp(totalBayarProgram)}</strong> &bull;
         Sisa: <strong>${rp(sisaProgram)}</strong>
